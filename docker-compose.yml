@@ -94,6 +94,7 @@ services:
     ports:
       - "8080:8080"
     command: ["airflow", "webserver"]
+    restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
@@ -113,6 +114,7 @@ services:
     environment:
       <<: *airflow-common-env
     command: ["airflow", "scheduler"]
+    restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
@@ -132,6 +134,7 @@ services:
     environment:
       <<: *airflow-common-env
     command: ["airflow", "celery", "worker", "--queues", "default"]
+    restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
@@ -151,6 +154,7 @@ services:
     environment:
       <<: *airflow-common-env
     command: ["airflow", "triggerer"]
+    restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
@@ -167,6 +171,7 @@ services:
     environment:
       - FLASK_ENV=production
     command: ["python", "app.py"]
+    restart: unless-stopped
 
 volumes:
   postgres_data:
