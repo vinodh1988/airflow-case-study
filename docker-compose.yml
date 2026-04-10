@@ -58,13 +58,7 @@ services:
     image: airflow-project:latest
     environment:
       <<: *airflow-common-env
-    entrypoint: ["sh", "-lc"]
-    command: |
-      airflow db init &&
-      (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) &&
-      (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) &&
-      (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) &&
-      (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)
+    command: ["bash", "-lc", "airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"]
     depends_on:
       postgres:
         condition: service_healthy
