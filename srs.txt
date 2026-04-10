@@ -1,0 +1,172 @@
+🧾 Airflow POC – SRE-Oriented Specification
+🏷️ Title
+
+Mini Data Platform Orchestration using Apache Airflow (Dockerized Environment)
+
+1. 🎯 Objective
+
+Design and deploy a containerized workflow orchestration system using Apache Airflow that simulates a realistic production data pipeline with:
+
+External dependency interaction
+Data ingestion, transformation, and analytics
+Failure handling and retry strategies
+Observability and alerting
+2. 🧱 System Architecture
+2.1 Core Components
+Layer	Component	Responsibility
+Orchestration	Airflow Scheduler/Webserver	DAG execution & monitoring
+Execution	Airflow Workers (Celery)	Task execution
+Messaging	Redis	Broker for task queue
+Metadata DB	PostgreSQL	Airflow metadata & pipeline data
+External Service	Fake API Container	Simulated upstream system
+Observability	Mailhog	Email capture
+Admin	Adminer	DB inspection
+2.2 Execution Model
+Executor: CeleryExecutor
+Communication:
+Scheduler → Redis → Workers
+Persistence:
+PostgreSQL for metadata + pipeline data
+Networking:
+All containers in shared bridge network
+3. 🔄 Pipeline Design (DAGs)
+3.1 DAG 1: Data Ingestion Pipeline
+Schedule
+Frequency: Every 5 minutes
+SLA: 2 minutes
+Workflow
+Fetch Data
+Pull JSON data from Fake API
+Dependency: API availability
+Validate Payload
+Schema validation
+Reject malformed records
+Persist Raw Data
+Store in PostgreSQL (raw_data table)
+Failure Strategy
+Step	Failure Handling
+Fetch	Retry (3 attempts, exponential backoff)
+Validation	Mark task failed (no retry)
+Storage	Retry (idempotent insert logic)
+3.2 DAG 2: Data Transformation Pipeline
+Schedule
+Frequency: Every 10 minutes
+Trigger: Independent (can also be dataset-triggered)
+Workflow
+Read raw data
+Transform:
+Deduplicate
+Normalize fields
+Load into processed_data
+Reliability Considerations
+Ensure idempotency
+Avoid duplicate processing using watermark or timestamp
+3.3 DAG 3: Analytics Pipeline
+Schedule
+Frequency: Hourly
+Workflow
+Aggregate metrics:
+Record count
+Average values
+Generate report (CSV artifact)
+Store in shared volume
+SLO
+Report generation within 3 minutes
+3.4 DAG 4: Alerting & Notification Pipeline
+Schedule
+Event-driven or periodic (15 mins)
+Workflow
+Detect anomalies:
+Threshold breach
+Send alert via email (Mailhog)
+Alert Criteria Example
+Price deviation > 20%
+Missing data spikes
+4. 📊 Observability Strategy
+4.1 Logging
+Task-level logs stored in Airflow
+Log types:
+Execution logs
+Error logs
+Retry logs
+4.2 Metrics
+Metric	Source	Purpose
+DAG duration	Airflow	SLA tracking
+Task retries	Airflow	Stability indicator
+Queue backlog	Redis	Load monitoring
+DB connections	PostgreSQL	Resource pressure
+4.3 Alerting
+Condition	Action
+DAG failure	Email alert
+SLA miss	Email alert
+Retry exhaustion	Escalation
+5. 🔁 Failure Scenarios (Critical for SRE)
+Scenario 1: API Unavailable
+Impact: Ingestion DAG fails
+Mitigation:
+Retry with exponential backoff
+Circuit breaker (optional extension)
+Scenario 2: Database Down
+Impact: All pipelines blocked
+Mitigation:
+Retry with delay
+Alert immediately
+Scenario 3: Worker Crash
+Impact: Task execution halted
+Mitigation:
+Celery re-queues tasks
+Health checks on workers
+Scenario 4: Data Corruption
+Impact: Downstream pipelines affected
+Mitigation:
+Validation stage isolates bad data
+6. ⚙️ Operational Guidelines
+6.1 Deployment
+Use Docker Compose
+Services must start in order:
+PostgreSQL
+Redis
+Airflow components
+6.2 Health Checks
+Service	Check
+Airflow Web	UI доступность
+Scheduler	DAG heartbeat
+Worker	Celery ping
+DB	Connection test
+6.3 Scaling Strategy
+Horizontal scaling:
+Increase Airflow workers
+Vertical scaling:
+Increase DB resources
+7. 🔐 Security Considerations
+Use environment variables for secrets
+Restrict DB access
+Isolate containers via network
+8. 📦 Data Management
+Tables
+Table	Purpose
+raw_data	Unprocessed ingestion
+processed_data	Cleaned data
+metrics	Aggregated insights
+Retention Policy
+Raw data: 7 days
+Processed data: 30 days
+Logs: configurable
+9. 🧪 Testing Strategy
+Types of Tests
+DAG validation tests
+Task unit tests
+Failure injection tests
+Chaos Testing Ideas
+Kill worker container
+Drop DB connection
+Delay API response
+10. 🚀 POC Success Criteria
+
+The POC is considered successful if:
+
+DAGs execute on schedule
+Failures are retried and logged
+Alerts are generated correctly
+Data flows end-to-end
+System recovers from simulated failures

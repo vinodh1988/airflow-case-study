@@ -1,0 +1,151 @@
+version: "3.9"
+
+x-airflow-common-env: &airflow-common-env
+  AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+  AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+  AIRFLOW__SMTP__SMTP_HOST: mailhog
+  AIRFLOW__SMTP__SMTP_PORT: "1025"
+  AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+  AIRFLOW__SMTP__SMTP_SSL: "False"
+  AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+  AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+  AIRFLOW__CORE__FERNET_KEY: "6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE="
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
+  airflow-init:
+    build: .
+    image: airflow-project:latest
+    environment:
+      <<: *airflow-common-env
+    entrypoint: ["bash", "-lc"]
+    command: |
+      airflow db init &&
+      airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true &&
+      airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true &&
+      airflow connections add redis_default --conn-uri redis://redis:6379/0 || true &&
+      airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true
+    depends_on:
+      - postgres
+      - redis
+      - mailhog
+    restart: "no"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+  airflow-webserver:
+    build: .
+    image: airflow-project:latest
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      <<: *airflow-common-env
+    ports:
+      - "8080:8080"
+    command: ["airflow", "webserver"]
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+  airflow-scheduler:
+    build: .
+    image: airflow-project:latest
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      <<: *airflow-common-env
+    command: ["airflow", "scheduler"]
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+  airflow-worker:
+    build: .
+    image: airflow-project:latest
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      <<: *airflow-common-env
+    command: ["airflow", "celery", "worker", "--queues", "default"]
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+  airflow-triggerer:
+    build: .
+    image: airflow-project:latest
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      <<: *airflow-common-env
+    command: ["airflow", "triggerer"]
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./reports:/opt/airflow/reports
+
+  fake-api:
+    build:
+      context: ./fake_api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    environment:
+      - FLASK_ENV=production
+    command: ["python", "app.py"]
+
+volumes:
+  postgres_data:
+  airflow_logs:
+  airflow_plugins:
+  airflow_dags:
+  airflow_reports:
