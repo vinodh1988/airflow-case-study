@@ -25,3 +25,7 @@ def data():
         records.append(record)
 
     return jsonify(data=records, generated_at=now)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
