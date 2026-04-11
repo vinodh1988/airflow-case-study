@@ -58,7 +58,7 @@ services:
     image: airflow-project:latest
     environment:
       <<: *airflow-common-env
-    command: ["sh", "-c", "airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"]
+    command: ["sh", "-c", "/opt/airflow/venv/bin/airflow db init && (/opt/airflow/venv/bin/airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (/opt/airflow/venv/bin/airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (/opt/airflow/venv/bin/airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (/opt/airflow/venv/bin/airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
       <<: *airflow-common-env
     ports:
       - "8080:8080"
-    command: ["airflow", "webserver"]
+    command: ["/opt/airflow/venv/bin/airflow", "webserver"]
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
@@ -107,7 +107,7 @@ services:
         condition: service_completed_successfully
     environment:
       <<: *airflow-common-env
-    command: ["airflow", "scheduler"]
+    command: ["/opt/airflow/venv/bin/airflow", "scheduler"]
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
@@ -127,7 +127,7 @@ services:
         condition: service_completed_successfully
     environment:
       <<: *airflow-common-env
-    command: ["airflow", "celery", "worker", "--queues", "default"]
+    command: ["/opt/airflow/venv/bin/airflow", "celery", "worker", "--queues", "default"]
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
@@ -147,7 +147,7 @@ services:
         condition: service_completed_successfully
     environment:
       <<: *airflow-common-env
-    command: ["airflow", "triggerer"]
+    command: ["/opt/airflow/venv/bin/airflow", "triggerer"]
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
