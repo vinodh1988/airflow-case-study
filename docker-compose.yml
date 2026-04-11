@@ -57,8 +57,11 @@ services:
     user: root
     environment:
       <<: *airflow-common-env
-    entrypoint: ["/bin/sh", "-c"]
-    command: "chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"
+    entrypoint: null
+    command:
+      - /bin/sh
+      - -c
+      - "chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"
     depends_on:
       postgres:
         condition: service_healthy

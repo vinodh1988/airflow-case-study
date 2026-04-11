@@ -1,0 +1,389 @@
+name: airflow-project
+services:
+  adminer:
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+    image: adminer:latest
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8081"
+        protocol: tcp
+  airflow-init:
+    build:
+      context: D:\new-projects\airflow-project
+      dockerfile: Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)
+    depends_on:
+      mailhog:
+        condition: service_started
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__SMTP__SMTP_HOST: mailhog
+      AIRFLOW__SMTP__SMTP_PORT: "1025"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+      AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+    image: airflow-project-init:latest
+    networks:
+      default: null
+    restart: "no"
+    user: root
+    volumes:
+      - type: bind
+        source: D:\new-projects\airflow-project\dags
+        target: /opt/airflow/dags
+        bind: {}
+      - type: volume
+        source: airflow_logs
+        target: /opt/airflow/logs
+        volume: {}
+      - type: volume
+        source: airflow_plugins
+        target: /opt/airflow/plugins
+        volume: {}
+      - type: volume
+        source: airflow_reports
+        target: /opt/airflow/reports
+        volume: {}
+  airflow-scheduler:
+    build:
+      context: D:\new-projects\airflow-project
+      dockerfile: Dockerfile
+    command:
+      - airflow
+      - scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__SMTP__SMTP_HOST: mailhog
+      AIRFLOW__SMTP__SMTP_PORT: "1025"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+      AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+    image: airflow-project-scheduler:latest
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\new-projects\airflow-project\dags
+        target: /opt/airflow/dags
+        bind: {}
+      - type: volume
+        source: airflow_logs
+        target: /opt/airflow/logs
+        volume: {}
+      - type: volume
+        source: airflow_plugins
+        target: /opt/airflow/plugins
+        volume: {}
+      - type: volume
+        source: airflow_reports
+        target: /opt/airflow/reports
+        volume: {}
+  airflow-triggerer:
+    build:
+      context: D:\new-projects\airflow-project
+      dockerfile: Dockerfile
+    command:
+      - airflow
+      - triggerer
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__SMTP__SMTP_HOST: mailhog
+      AIRFLOW__SMTP__SMTP_PORT: "1025"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+      AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+    image: airflow-project-triggerer:latest
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\new-projects\airflow-project\dags
+        target: /opt/airflow/dags
+        bind: {}
+      - type: volume
+        source: airflow_logs
+        target: /opt/airflow/logs
+        volume: {}
+      - type: volume
+        source: airflow_plugins
+        target: /opt/airflow/plugins
+        volume: {}
+      - type: volume
+        source: airflow_reports
+        target: /opt/airflow/reports
+        volume: {}
+  airflow-webserver:
+    build:
+      context: D:\new-projects\airflow-project
+      dockerfile: Dockerfile
+    command:
+      - airflow
+      - webserver
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__SMTP__SMTP_HOST: mailhog
+      AIRFLOW__SMTP__SMTP_PORT: "1025"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+      AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+    image: airflow-project-webserver:latest
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8080"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\new-projects\airflow-project\dags
+        target: /opt/airflow/dags
+        bind: {}
+      - type: volume
+        source: airflow_logs
+        target: /opt/airflow/logs
+        volume: {}
+      - type: volume
+        source: airflow_plugins
+        target: /opt/airflow/plugins
+        volume: {}
+      - type: volume
+        source: airflow_reports
+        target: /opt/airflow/reports
+        volume: {}
+  airflow-worker:
+    build:
+      context: D:\new-projects\airflow-project
+      dockerfile: Dockerfile
+    command:
+      - airflow
+      - celery
+      - worker
+      - --queues
+      - default
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__SMTP__SMTP_HOST: mailhog
+      AIRFLOW__SMTP__SMTP_PORT: "1025"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+      AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
+    image: airflow-project-worker:latest
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\new-projects\airflow-project\dags
+        target: /opt/airflow/dags
+        bind: {}
+      - type: volume
+        source: airflow_logs
+        target: /opt/airflow/logs
+        volume: {}
+      - type: volume
+        source: airflow_plugins
+        target: /opt/airflow/plugins
+        volume: {}
+      - type: volume
+        source: airflow_reports
+        target: /opt/airflow/reports
+        volume: {}
+  fake-api:
+    build:
+      context: D:\new-projects\airflow-project\fake_api
+      dockerfile: Dockerfile
+    command:
+      - python
+      - app.py
+    depends_on:
+      postgres:
+        condition: service_started
+        required: true
+    environment:
+      FLASK_ENV: production
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5000
+        published: "5000"
+        protocol: tcp
+    restart: unless-stopped
+  mailhog:
+    image: mailhog/mailhog
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8025
+        published: "8025"
+        protocol: tcp
+      - mode: ingress
+        target: 1025
+        published: "1025"
+        protocol: tcp
+  postgres:
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_USER: airflow
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U airflow
+      timeout: 5s
+      interval: 5s
+      retries: 5
+    image: postgres:15-alpine
+    networks:
+      default: null
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  redis:
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s
+      interval: 5s
+      retries: 5
+    image: redis:7-alpine
+    networks:
+      default: null
+networks:
+  default:
+    name: airflow-project_default
+volumes:
+  airflow_logs:
+    name: airflow-project_airflow_logs
+  airflow_plugins:
+    name: airflow-project_airflow_plugins
+  airflow_reports:
+    name: airflow-project_airflow_reports
+  postgres_data:
+    name: airflow-project_postgres_data
+x-airflow-common-env:
+  AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+  AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  AIRFLOW__CORE__FERNET_KEY: 6QeJ2jc6smniweSCa3uIvY9j3R8EYN1O-3U0H5b0jdE=
+  AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+  AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+  AIRFLOW__SMTP__SMTP_HOST: mailhog
+  AIRFLOW__SMTP__SMTP_PORT: "1025"
+  AIRFLOW__SMTP__SMTP_SSL: "False"
+  AIRFLOW__SMTP__SMTP_STARTTLS: "False"
+  AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
