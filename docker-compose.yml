@@ -56,9 +56,10 @@ services:
   airflow-init:
     build: .
     image: airflow-project:latest
+    user: root
     environment:
       <<: *airflow-common-env
-    command: ["sh", "-c", "/opt/airflow/venv/bin/airflow db init && (/opt/airflow/venv/bin/airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (/opt/airflow/venv/bin/airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (/opt/airflow/venv/bin/airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (/opt/airflow/venv/bin/airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"]
+    command: ["sh", "-c", "chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && /opt/airflow/venv/bin/airflow db init && (/opt/airflow/venv/bin/airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (/opt/airflow/venv/bin/airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (/opt/airflow/venv/bin/airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (/opt/airflow/venv/bin/airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,9 +70,9 @@ services:
     restart: "no"
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./reports:/opt/airflow/reports
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+      - airflow_reports:/opt/airflow/reports
 
   airflow-webserver:
     build: .
@@ -91,9 +92,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./reports:/opt/airflow/reports
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+      - airflow_reports:/opt/airflow/reports
 
   airflow-scheduler:
     build: .
@@ -111,9 +112,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./reports:/opt/airflow/reports
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+      - airflow_reports:/opt/airflow/reports
 
   airflow-worker:
     build: .
@@ -131,9 +132,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./reports:/opt/airflow/reports
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+      - airflow_reports:/opt/airflow/reports
 
   airflow-triggerer:
     build: .
@@ -151,9 +152,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./reports:/opt/airflow/reports
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+      - airflow_reports:/opt/airflow/reports
 
   fake-api:
     build:
