@@ -1,4 +1,4 @@
-FROM apache/airflow:2.11.4-python3.11
+FROM apache/airflow:3.2.0-python3.13
 
 ENV AIRFLOW_HOME=/opt/airflow
 ENV PATH=/opt/airflow/.local/bin:/opt/airflow/venv/bin:${PATH}
