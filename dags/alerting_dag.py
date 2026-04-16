@@ -8,7 +8,7 @@ import smtplib
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from dags.db_utils import get_postgres_hook, PROCESSED_DATA_TABLE_DDL
+from db_utils import get_postgres_hook, PROCESSED_DATA_TABLE_DDL
 
 DEFAULT_ARGS = {
     "owner": "airflow",

@@ -8,7 +8,7 @@ import requests
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from dags.db_utils import RAW_DATA_TABLE_DDL, get_postgres_hook
+from db_utils import RAW_DATA_TABLE_DDL, get_postgres_hook
 
 DEFAULT_ARGS = {
     "owner": "airflow",

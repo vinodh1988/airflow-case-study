@@ -4,3 +4,5 @@ apache-airflow-providers-smtp==2.4.4
 pandas>=2.0.0
 psycopg2-binary>=2.9.6
 requests>=2.31.0
+pymongo>=4.7.0
+pyspark>=3.5.0

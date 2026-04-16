@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 from typing import Any
 
@@ -7,7 +8,7 @@ import pandas as pd
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from dags.db_utils import get_postgres_hook, PROCESSED_DATA_TABLE_DDL, RAW_DATA_TABLE_DDL
+from db_utils import get_postgres_hook, PROCESSED_DATA_TABLE_DDL, RAW_DATA_TABLE_DDL
 
 DEFAULT_ARGS = {
     "owner": "airflow",
@@ -73,7 +74,7 @@ with DAG(
                     str(row["record_id"]),
                     row["event_ts"],
                     float(row["value"]),
-                    row["payload"],
+                    json.dumps(row["payload"]),
                 ),
             )
             updated_ids.append(row["record_id"])
