@@ -6,7 +6,7 @@ x-airflow-common-env: &airflow-common-env
   AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql+psycopg2://airflow:airflow@postgres/airflow
   AIRFLOW_CONN_REDIS_DEFAULT: redis://redis:6379/0
   AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
   AIRFLOW_CONN_SMTP_DEFAULT: smtp://mailhog:1025
   AIRFLOW__SMTP__SMTP_HOST: mailhog
   AIRFLOW__SMTP__SMTP_PORT: "1025"
@@ -69,7 +69,7 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - "chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true)"
+      - "chown -R airflow:root /opt/airflow/logs /opt/airflow/plugins /opt/airflow/reports && airflow db init && (airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true) && (airflow connections add postgres_default --conn-uri postgresql+psycopg2://airflow:airflow@postgres/airflow || true) && (airflow connections add redis_default --conn-uri redis://redis:6379/0 || true) && (airflow connections add smtp_default --conn-uri smtp://mailhog:1025 || true) && (airflow dags unpause data_ingestion_pipeline || true) && (airflow dags unpause data_transformation_pipeline || true) && (airflow dags unpause analytics_pipeline || true) && (airflow dags unpause alerting_notification_pipeline || true) && (airflow dags unpause spark_data_pipeline || true) && (airflow dags unpause synthetic_data_generation || true)"
     depends_on:
       postgres:
         condition: service_healthy
